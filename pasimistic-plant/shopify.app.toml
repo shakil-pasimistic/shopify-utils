@@ -3,7 +3,7 @@
 client_id = "d542300de1ed5a3d9b8299e1e39869a3"
 name = "pasimistic-plant"
 handle = "pasimistic-plant"
-application_url = "https://wy-mats-closest-fy.trycloudflare.com"
+application_url = "https://visit-mailing-connected-ball.trycloudflare.com"
 embedded = true
 
 [build]
@@ -16,9 +16,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://wy-mats-closest-fy.trycloudflare.com/auth/callback",
-  "https://wy-mats-closest-fy.trycloudflare.com/auth/shopify/callback",
-  "https://wy-mats-closest-fy.trycloudflare.com/api/auth/callback"
+  "https://visit-mailing-connected-ball.trycloudflare.com/auth/callback",
+  "https://visit-mailing-connected-ball.trycloudflare.com/auth/shopify/callback",
+  "https://visit-mailing-connected-ball.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
