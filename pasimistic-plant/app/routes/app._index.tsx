@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useActionData, useNavigation, useSubmit } from "@remix-run/react";
+import {
+  useActionData,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+} from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -18,9 +23,32 @@ import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
 
-  return null;
+  const items = await admin.graphql(
+    `#graphql
+      query {
+        products(first: 10) {
+          edges {
+            node {
+              title
+            }
+          }
+        }
+      }`,
+  );
+
+  const productsJson = await items.json();
+
+  const products = productsJson.data?.products?.edges.map(
+    (product: { node: { title: string } }) => {
+      return product.node.title;
+    },
+  );
+
+  return json({
+    products,
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -28,6 +56,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
+
+  const items = await admin.graphql(
+    `#graphql
+      query {
+        products(first: 10) {
+          edges {
+            node {
+              title
+            }
+          }
+        }
+      }`,
+  );
+
+  const productsJson = await items.json();
+
+  const products = productsJson.data?.products?.edges.map(
+    // eslint-disable-next-line array-callback-return
+    (product: { node: { title: string } }) => {
+      return product.node.title;
+    },
+  );
+
+  console.log("🚀 ~ action ~ products:", products);
+
   const response = await admin.graphql(
     `#graphql
       mutation populateProduct($input: ProductInput!) {
@@ -89,16 +142,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return json({
     product: responseJson!.data!.productCreate!.product,
     variant: variantResponseJson!.data!.productVariantUpdate!.productVariant,
+    products,
   });
 };
 
+// The Index component is the main page of the app. It displays a welcome message and a button to generate a product.
 export default function Index() {
   const nav = useNavigation();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const shopify = useAppBridge();
+  const loaderData = useLoaderData<typeof loader>();
+
+  console.table(loaderData?.products);
+
   const isLoading =
     ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
+
   const productId = actionData?.product?.id.replace(
     "gid://shopify/Product/",
     "",
@@ -109,18 +169,18 @@ export default function Index() {
       shopify.toast.show("Product created");
     }
   }, [productId, shopify]);
+
   const generateProduct = () => submit({}, { replace: true, method: "POST" });
 
   return (
     <Page>
-      <TitleBar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
+      <TitleBar title="Pasimistic Plant" key="Home page title">
+        <button variant="primary">Version 1.0.0</button>
       </TitleBar>
+
       <BlockStack gap="500">
         <Layout>
-          <Layout.Section>
+          <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
@@ -226,6 +286,7 @@ export default function Index() {
               </BlockStack>
             </Card>
           </Layout.Section>
+
           <Layout.Section variant="oneThird">
             <BlockStack gap="500">
               <Card>
@@ -324,6 +385,28 @@ export default function Index() {
                       </Link>
                     </List.Item>
                   </List>
+                </BlockStack>
+              </Card>
+            </BlockStack>
+          </Layout.Section>
+
+          <Layout.Section variant="oneThird">
+            <BlockStack gap="500">
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    Currently available products
+                  </Text>
+
+                  <BlockStack gap="200">
+                    {loaderData?.products?.map((product: string) => (
+                      <InlineStack key={product} align="space-between">
+                        <Text as="span" variant="bodyMd">
+                          {product}
+                        </Text>
+                      </InlineStack>
+                    ))}
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </BlockStack>
